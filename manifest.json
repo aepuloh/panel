@@ -1,0 +1,7 @@
+{
+  "version": "7.1",
+  "files": [
+    "app.py",
+    "templates/dashboard.html"
+  ]
+}
