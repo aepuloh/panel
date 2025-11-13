@@ -1,1 +1,304 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌿 GrassPanel v5.9 — Smart Automation Environment</title>
+  <style>
+    :root {
+      --accent: #00ffbf;
+      --bg: linear-gradient(160deg, #071a14, #0b3227, #0f5140);
+      --card-bg: rgba(255,255,255,0.07);
+      --hover-bg: rgba(255,255,255,0.12);
+      --success: #64ffb7;
+      --danger: #ff4b5c;
+      --deploying: #ffd447;
+      --glass: rgba(255,255,255,0.05);
+    }
 
+    body {
+      margin: 0;
+      font-family: "Poppins", sans-serif;
+      background: var(--bg);
+      color: #fff;
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .sidebar {
+      width: 250px;
+      background: var(--glass);
+      backdrop-filter: blur(15px);
+      border-right: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 25px 15px;
+      box-shadow: 0 0 25px rgba(0,255,180,0.15);
+    }
+
+    .sidebar h2 {
+      font-size: 1.3em;
+      margin-bottom: 15px;
+      color: var(--accent);
+      font-family: "Orbitron", sans-serif;
+      text-shadow: 0 0 12px rgba(0,255,180,0.6);
+    }
+
+    .user-info { text-align: center; margin-bottom: 25px; font-size: 0.9rem; color: #ccc; }
+
+    .menu { width: 100%; }
+    .menu a {
+      display: flex; align-items: center; gap: 12px; text-decoration: none; color: #fff;
+      padding: 12px 20px; border-radius: 10px; margin-bottom: 8px;
+      transition: background 0.3s ease, transform 0.2s ease; position: relative;
+    }
+    .menu a:hover { background: var(--hover-bg); transform: translateX(6px); }
+
+    .content {
+      flex: 1;
+      padding: 30px 40px;
+      overflow-y: auto;
+    }
+
+    h1 {
+      color: var(--accent);
+      font-family: "Orbitron", sans-serif;
+      text-shadow: 0 0 12px rgba(16,255,180,0.6);
+    }
+
+    .sys-status {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .status-box {
+      flex: 1 1 150px;
+      background: var(--card-bg);
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 0 15px rgba(0,255,180,0.15);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      position: relative;
+      transition: 0.3s;
+    }
+
+    .card:hover {
+      background: rgba(255,255,255,0.1);
+      transform: translateY(-5px);
+      box-shadow: 0 0 25px rgba(0,255,180,0.25);
+    }
+
+    .service-status {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-weight: bold;
+      font-size: 0.9rem;
+      transition: all 0.4s ease;
+    }
+
+    .running { color: var(--success); }
+    .stopped { color: var(--danger); }
+    .deploying { color: var(--deploying); animation: blink 1.3s infinite; }
+    @keyframes blink { 0%{opacity:1} 50%{opacity:0.4} 100%{opacity:1} }
+
+    .actions { margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px; }
+
+    .btn {
+      background: var(--accent);
+      color: #000;
+      padding: 8px 15px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .btn:hover { background: #00e5a1; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-danger:hover { background: #e33e4e; }
+    .btn-alt { background: var(--success); color: #111; }
+    .btn-alt:hover { background: #47e46f; }
+
+    .progress {
+      margin-top: 10px;
+      height: 6px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.85);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: 0.3s;
+      z-index: 200;
+      font-weight: bold;
+      box-shadow: 0 0 12px rgba(0,255,180,0.4);
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { border-left: 5px solid var(--success); }
+    .toast.error { border-left: 5px solid var(--danger); }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <h2>🌿 GrassPanel</h2>
+    <div class="user-info">
+      👤 {{ user }}<br><small>{{ role|capitalize }}</small>
+    </div>
+    <div class="menu">
+      <a href="{{ url_for('home') }}">🏠 Home</a>
+      <a href="{{ url_for('create_website') }}">🕸️ Buat Website</a>
+      <a href="{{ url_for('dashboard') }}">📂 Proyek</a>
+      {% if role == 'admin' %}
+      <a href="{{ url_for('integrations') }}">🔧 Integrasi</a>
+      <a href="{{ url_for('users') }}">👥 Pengguna</a>
+      <a href="{{ url_for('dev_applications') }}">🧩 Pengajuan Dev</a>
+      <a href="{{ url_for('visitors') }}">📊 Statistik</a>
+      <a href="{{ url_for('backup_system') }}">💾 Backup</a>
+      {% endif %}
+      <a href="{{ url_for('logout') }}">🚪 Logout</a>
+    </div>
+  </div>
+
+  <div class="content">
+    <h1>📊 Status Sistem & Proyek Aktif</h1>
+
+    <div class="sys-status">
+      <div class="status-box"><h3 id="cpu">--%</h3><p>CPU Usage</p></div>
+      <div class="status-box"><h3 id="ram">--%</h3><p>RAM Usage</p></div>
+      <div class="status-box"><h3 id="disk">--%</h3><p>Disk Usage</p></div>
+    </div>
+
+    {% if projects %}
+      <div class="grid">
+        {% for project in projects %}
+        {% set safe_name = project.name.replace(' ', '_').replace('.', '_').replace('-', '_') %}
+        <div class="card" id="card-{{ safe_name }}" data-project="{{ project.name }}">
+          <span class="service-status" id="status-{{ safe_name }}">⏳ Checking...</span>
+          <h3>{{ project.name }}</h3>
+          <small>📁 {{ project.path }}</small><br>
+          {% if project.domain %}
+            <small>🌐 <a href="http://{{ project.domain }}" target="_blank" style="color:#00ffa2;">{{ project.domain }}</a></small><br>
+          {% endif %}
+          <small>👤 Owner: {{ project.owner }}</small>
+
+          <div class="actions">
+            <button class="btn btn-alt" onclick="startDeploy('{{ loop.index0 }}', '{{ safe_name }}', '{{ project.domain }}')">🚀 Deploy</button>
+            <a href="/files/{{ project.name }}" class="btn">📁 Files</a>
+            <a href="http://panel.grass.web.id/phpmyadmin" target="_blank" class="btn">💾 Database</a>
+            <a href="/action/{{ loop.index0 }}/delete" class="btn btn-danger">🗑️ Delete</a>
+            <button class="btn" onclick="viewLogs('{{ project.name }}')">📜 Log</button>
+            {% if project.domain %}
+              <a href="http://{{ project.domain }}" target="_blank" class="btn">🌐 Preview</a>
+            {% endif %}
+          </div>
+          <div class="progress"><div class="progress-bar" id="progress-{{ safe_name }}"></div></div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">Belum ada proyek aktif 🌱</div>
+    {% endif %}
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    function showToast(msg, lvl="success"){
+      const t=document.getElementById('toast');
+      t.textContent=msg;
+      t.className='toast show '+lvl;
+      setTimeout(()=>t.className='toast',4000);
+    }
+
+    async function updateSystem(){
+      try{
+        const r=await fetch('/system_status');
+        const d=await r.json();
+        document.getElementById('cpu').textContent=d.cpu+'%';
+        document.getElementById('ram').textContent=d.ram+'%';
+        document.getElementById('disk').textContent=d.disk+'%';
+      }catch(e){}
+    }
+
+    async function refreshProjectStatus(){
+      const cards=document.querySelectorAll('[data-project]');
+      for(const c of cards){
+        const name=c.dataset.project;
+        const safe=name.replaceAll(' ','_').replaceAll('.','_').replaceAll('-','_');
+        const el=document.getElementById(`status-${safe}`);
+        try{
+          const r=await fetch(`/check_domain_status/${name}`);
+          const d=await r.json();
+          if(!el)return;
+          el.className="service-status";
+          if(d.status==="online"){el.textContent="✅ Online";el.classList.add("running");}
+          else if(d.status==="deploying"){el.textContent="🚀 Deploying...";el.classList.add("deploying");}
+          else{el.textContent="❌ Offline";el.classList.add("stopped");}
+        }catch(e){console.warn(e);}
+      }
+    }
+
+    async function startDeploy(idx,safe,domain){
+      const el=document.getElementById(`status-${safe}`);
+      const progress=document.getElementById(`progress-${safe}`);
+      if(!el)return;
+      el.textContent="🚀 Deploying...";
+      el.className="service-status deploying";
+      progress.style.width="10%";
+      showToast("🚀 Deploy dimulai...","success");
+      fetch(`/action/${idx}/deploy`);
+      let p=10;const anim=setInterval(()=>{if(p<90)p+=5;progress.style.width=p+"%";},2500);
+      const check=setInterval(async()=>{
+        try{
+          const r=await fetch(`/check_domain_status/${safe}`);
+          const d=await r.json();
+          if(d.status==="online"){clearInterval(anim);clearInterval(check);progress.style.width="100%";el.innerHTML=`✅ Online <a href="http://${domain}" target="_blank" style="color:#00ffa2;font-weight:bold;">🌐</a>`;el.className="service-status running";showToast("✅ Website aktif!","success");}
+          else if(d.status==="offline"){clearInterval(anim);clearInterval(check);progress.style.width="100%";el.textContent="❌ Offline";el.className="service-status stopped";showToast("⚠️ Deploy gagal.","error");}
+        }catch(e){}
+      },6000);
+    }
+
+    function viewLogs(p){window.open(`/deploy_logs/${p}`,"_blank");}
+
+    document.addEventListener("DOMContentLoaded",()=>{
+      updateSystem();refreshProjectStatus();
+      setInterval(updateSystem,6000);
+      setInterval(refreshProjectStatus,10000);
+    });
+  </script>
+</body>
+</html>
